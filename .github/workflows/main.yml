@@ -8,33 +8,24 @@ on:
   workflow_dispatch:
 
 env:
-  DOCKER_HUB_REPO: your-dockerhub-username/repository-name
+  DOCKER_HUB_REPO: joshhyde654/frontend
   IMAGE_TAG: latest
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    
-    # Add explicit check for required secrets
-    if: "${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}"
-    
     steps:
       - name: Check out code
         uses: actions/checkout@v4
       
-      # Add debug step to check if secrets are available (will not expose actual values)
-      - name: Check secrets
+      - name: Check for required secrets
         run: |
-          if [ -n "${{ secrets.DOCKERHUB_USERNAME }}" ]; then
-            echo "DOCKERHUB_USERNAME is set"
-          else
-            echo "DOCKERHUB_USERNAME is not set"
+          if [ -z "${{ secrets.DOCKERHUB_USERNAME }}" ]; then
+            echo "Error: DOCKERHUB_USERNAME secret is not set"
             exit 1
           fi
-          if [ -n "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
-            echo "DOCKERHUB_TOKEN is set"
-          else
-            echo "DOCKERHUB_TOKEN is not set"
+          if [ -z "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
+            echo "Error: DOCKERHUB_TOKEN secret is not set"
             exit 1
           fi
       
@@ -46,8 +37,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          # Add explicit failure if login fails
-          logout: true
       
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
