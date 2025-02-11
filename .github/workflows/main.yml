@@ -5,21 +5,38 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-  # Allow manual triggers from the Actions tab
   workflow_dispatch:
 
 env:
-  # Change these variables according to your needs
-  DOCKER_HUB_REPO: joshhyde654/frontend
+  DOCKER_HUB_REPO: your-dockerhub-username/repository-name
   IMAGE_TAG: latest
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     
+    # Add explicit check for required secrets
+    if: "${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}"
+    
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+      
+      # Add debug step to check if secrets are available (will not expose actual values)
+      - name: Check secrets
+        run: |
+          if [ -n "${{ secrets.DOCKERHUB_USERNAME }}" ]; then
+            echo "DOCKERHUB_USERNAME is set"
+          else
+            echo "DOCKERHUB_USERNAME is not set"
+            exit 1
+          fi
+          if [ -n "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
+            echo "DOCKERHUB_TOKEN is set"
+          else
+            echo "DOCKERHUB_TOKEN is not set"
+            exit 1
+          fi
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -29,9 +46,11 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+          # Add explicit failure if login fails
+          logout: true
       
       - name: Build and push Docker image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v5
         with:
           context: .
           push: true
